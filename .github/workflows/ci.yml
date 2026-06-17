@@ -32,13 +32,6 @@ jobs:
   setup_matrix:
     name: "Setup Test Matrix"
     runs-on: "ubuntu-24.04"
-    # Only run when secrets are guaranteed to be in scope:
-    # - same-repo pull_request (not a fork)
-    # - workflow_dispatch
-    # - pull_request_target from a same-repo branch (rare but valid)
-    # - pull_request_target from a fork that already has the allowed-for-ci label
-    # Fork pull_request events are excluded because GitHub withholds secrets,
-    # causing bundle install to fail against rubygems-puppetcore.puppet.com.
     if: >-
       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork != true) ||
       github.event_name == 'workflow_dispatch' ||
@@ -73,9 +66,6 @@ jobs:
     name: "Fork PR approval gate"
     needs: setup_matrix
     runs-on: ubuntu-latest
-    # Funnels the puppetcore-fork environment approval through a single non-matrix job.
-    # Same-repo PRs and workflow_dispatch skip this; Acceptance handles the skipped case
-    # via always() below.
     if: >-
       github.event_name == 'pull_request_target' &&
       github.event.pull_request.head.repo.fork == true
@@ -94,8 +84,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.setup_matrix.outputs.matrix)}}
-    # always() is required so this is evaluated when approval_gate is skipped
-    # (non-fork events); without it, dependency-skip would cascade.
     if: >-
       always() &&
       needs.setup_matrix.result == 'success' &&
