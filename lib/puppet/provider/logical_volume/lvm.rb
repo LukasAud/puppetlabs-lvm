@@ -269,8 +269,8 @@ Puppet::Type.type(:logical_volume).provide :lvm do
 
   # Location of the mirror log. Empty string if mirror==0, else "mirrored", "disk" or "core".
   def mirrorlog
-    vgname = (@resource[:volume_group]).to_s
-    lvname = (@resource[:name]).to_s
+    vgname = @resource[:volume_group].to_s
+    lvname = @resource[:name].to_s
     raw = lvs('-a', '-o', '+devices', vgpath)
 
     if mirror.to_i.positive?
