@@ -32,11 +32,12 @@ jobs:
   setup_matrix:
     name: "Setup Test Matrix"
     runs-on: "ubuntu-24.04"
-    # For pull_request_target (fork PRs), only run once the allowed-for-ci label is present.
     if: >-
-      github.event_name != 'pull_request_target' ||
-      github.event.pull_request.head.repo.fork != true ||
-      contains(github.event.pull_request.labels.*.name, 'allowed-for-ci')
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork != true) ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request_target' &&
+       (github.event.pull_request.head.repo.fork != true ||
+        contains(github.event.pull_request.labels.*.name, 'allowed-for-ci')))
     outputs:
       matrix: ${{ steps.get-matrix.outputs.matrix }}
 
@@ -65,9 +66,6 @@ jobs:
     name: "Fork PR approval gate"
     needs: setup_matrix
     runs-on: ubuntu-latest
-    # Funnels the puppetcore-fork environment approval through a single non-matrix job.
-    # Same-repo PRs and workflow_dispatch skip this; Acceptance handles the skipped case
-    # via always() below.
     if: >-
       github.event_name == 'pull_request_target' &&
       github.event.pull_request.head.repo.fork == true
@@ -86,8 +84,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.setup_matrix.outputs.matrix)}}
-    # always() is required so this is evaluated when approval_gate is skipped
-    # (non-fork events); without it, dependency-skip would cascade.
     if: >-
       always() &&
       needs.setup_matrix.result == 'success' &&
