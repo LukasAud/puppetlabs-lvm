@@ -4,12 +4,10 @@ on:
   pull_request:
     branches:
       - "main"
-      - "cat-2665-fork-ci-lvm"
   pull_request_target:
     types: [labeled, reopened]
     branches:
       - "main"
-      - "cat-2665-fork-ci-lvm"
   workflow_dispatch:
 
 permissions:
